@@ -20,6 +20,12 @@ prisma/schema.prisma    Database schema (Firm, User, Client, Notice, NoticeRule)
 prisma/seed.ts          Seeds 12 notice rules, demo firm/user, 5 fake clients
 prisma/migrations/      SQL migrations (committed)
 src/app/                Pages and API routes (App Router)
+src/auth.ts             Auth.js (credentials + bcrypt) — signIn/signOut/auth
+src/auth.config.ts      Edge-safe auth config used by middleware
+src/middleware.ts       Protects every route except /login and /api/auth
+src/app/login/          Login page
+src/app/(app)/          Logged-in pages inside the sidebar shell (/, /clients, /upload)
+src/lib/session.ts      requireUser() → { id, firmId, role } or redirect to /login
 src/lib/db.ts           Shared Prisma client
 src/lib/                Server logic (extract.ts, deadline.ts, auth helpers — added later)
 .env.example            Template for env vars (copy to .env)
@@ -37,6 +43,13 @@ uploads/                Local upload dir (gitignored)
 4. Deadlines are computed by code from `NoticeRule` (`src/lib/deadline.ts`), never taken from the AI alone.
 5. Uploaded files are served only through an authenticated route — never from `public/`.
 6. Use mock / fully redacted notices only. No real client documents.
+
+## Auth notes
+- In every server page, server action, and API route call `const user = await requireUser()` and
+  filter queries with `firmId: user.firmId`. Middleware is a first gate, not the only one.
+- Session is a JWT carrying `id`, `firmId`, `role`.
+- Public routes (e.g. the stretch `/u/[token]` client upload page) must be explicitly allowed in
+  `authorized()` in `src/auth.config.ts`.
 
 ## Data model notes
 - Prisma fields are camelCase; DB columns/tables are snake_case via `@map`/`@@map`.
