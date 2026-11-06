@@ -28,6 +28,7 @@ src/app/(app)/          Logged-in pages inside the sidebar shell (/, /clients, /
 src/lib/session.ts      requireUser() → { id, firmId, role } or redirect to /login
 src/lib/db.ts           Shared Prisma client
 src/lib/                Server logic (extract.ts, deadline.ts, auth helpers — added later)
+DEPLOY.md               Railway deploy walkthrough
 .env.example            Template for env vars (copy to .env)
 uploads/                Local upload dir (gitignored)
 ```
@@ -61,7 +62,8 @@ uploads/                Local upload dir (gitignored)
 
 ## Commands
 - `npm run dev` — start dev server (http://localhost:3000)
-- `npm run build` / `npm start` — production build / run
+- `npm run build` / `npm start` — production build / run (`start` runs `prisma migrate deploy` + seed first; used by Railway)
+- `npm run start:app` — start the app only, no migrate/seed
 - `npm run lint` — ESLint
 - `npm run db:migrate` — create/apply a Prisma migration
 - `npm run db:seed` — load rules + demo data (safe to re-run)

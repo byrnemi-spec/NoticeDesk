@@ -35,6 +35,9 @@ and never miss a response window. See [PLAN.md](./PLAN.md) for the full build pl
    npm run dev
    ```
 
+## Deploy
+See [DEPLOY.md](./DEPLOY.md) for step-by-step Railway setup. `npm start` runs migrations and the seed before starting the app.
+
 ## Demo login
 - Email: `demo@noticedesk.test`
 - Password: `demo1234` (demo only; all client data is fake)
