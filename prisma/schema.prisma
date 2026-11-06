@@ -1,0 +1,11 @@
+// Prisma schema for NoticeDesk.
+// Models (Firm, User, Client, Notice, NoticeRule) are added in Prompt 1 — see PLAN.md "Data model".
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
