@@ -1,5 +1,6 @@
-// Prisma schema for NoticeDesk.
-// Models (Firm, User, Client, Notice, NoticeRule) are added in Prompt 1 — see PLAN.md "Data model".
+// Prisma schema for NoticeDesk — see PLAN.md "Data model".
+// Fields are camelCase in code and snake_case in the database (@map / @@map).
+// RULE: every query on Firm-owned data (User, Client, Notice) must filter by firmId.
 
 generator client {
   provider = "prisma-client-js"
@@ -8,4 +9,161 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  staff
+}
+
+enum NoticeStatus {
+  New
+  Reviewed
+  Responded
+  Closed
+}
+
+enum UploadedBy {
+  staff
+  client_link
+}
+
+enum DeadlineSource {
+  printed
+  rule
+  manual
+}
+
+enum Confidence {
+  high
+  medium
+  low
+}
+
+enum WindowType {
+  calendar
+  business
+  printed
+}
+
+model Firm {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  users   User[]
+  clients Client[]
+  notices Notice[]
+
+  @@map("firms")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  firmId       String   @map("firm_id")
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(staff)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  firm            Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  reviewedNotices Notice[] @relation("ReviewedBy")
+
+  @@index([firmId])
+  @@map("users")
+}
+
+model Client {
+  id          String   @id @default(cuid())
+  firmId      String   @map("firm_id")
+  name        String
+  email       String?
+  phone       String?
+  /// Last 4 digits of SSN/EIN only. Never store a full TIN.
+  tinLast4    String?  @map("tin_last4") @db.VarChar(4)
+  /// Stretch: random token for the public client upload link.
+  uploadToken String?  @unique @map("upload_token")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  firm    Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  notices Notice[]
+
+  @@index([firmId])
+  @@map("clients")
+}
+
+model Notice {
+  id         String     @id @default(cuid())
+  firmId     String     @map("firm_id")
+  clientId   String     @map("client_id")
+  filePath   String     @map("file_path")
+  fileType   String     @map("file_type")
+  uploadedBy UploadedBy @default(staff) @map("uploaded_by")
+
+  /// Code as read from the notice (e.g. "CP2000"). May not match a rule.
+  noticeCode String? @map("notice_code")
+  /// Matched NoticeRule; null when the code is unknown (deadline set manually).
+  ruleCode   String? @map("rule_code")
+  taxForm    String? @map("tax_form")
+  taxYears   Int[]   @map("tax_years")
+
+  noticeDate       DateTime?       @map("notice_date") @db.Date
+  printedRespondBy DateTime?       @map("printed_respond_by") @db.Date
+  /// The deadline the dashboard uses.
+  deadline         DateTime?       @db.Date
+  deadlineSource   DeadlineSource? @map("deadline_source")
+  isHardDeadline   Boolean         @default(false) @map("is_hard_deadline")
+
+  amountDue Decimal? @map("amount_due") @db.Decimal(14, 2)
+
+  summary         String?
+  whatIrsWants    String?     @map("what_irs_wants")
+  ifIgnored       String?     @map("if_ignored")
+  nextStep        String?     @map("next_step")
+  penaltiesListed String[]    @map("penalties_listed")
+  confidence      Confidence?
+  /// Raw AI response, kept for debugging.
+  rawAiJson       Json?       @map("raw_ai_json")
+
+  needsReview Boolean      @default(true) @map("needs_review")
+  status      NoticeStatus @default(New)
+  notes       String?
+
+  reviewedById String?   @map("reviewed_by")
+  reviewedAt   DateTime? @map("reviewed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  firm       Firm        @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  client     Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  rule       NoticeRule? @relation(fields: [ruleCode], references: [code])
+  reviewedBy User?       @relation("ReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([firmId, deadline])
+  @@index([firmId, status])
+  @@index([clientId])
+  @@map("notices")
+}
+
+/// Shared reference data (not firm-owned). Seeded from PLAN.md "Notice rules table".
+model NoticeRule {
+  /// Primary code, e.g. "CP3219A".
+  code                   String     @id
+  /// Other codes that map to this rule, e.g. ["Letter 531"].
+  aliases                String[]
+  name                   String
+  description            String
+  /// Days from the notice date; null when window_type is "printed".
+  windowDays             Int?       @map("window_days")
+  windowType             WindowType @map("window_type")
+  /// CP14: balances at or above this amount use largeBalanceWindowDays (business days).
+  largeBalanceThreshold  Decimal?   @map("large_balance_threshold") @db.Decimal(14, 2)
+  largeBalanceWindowDays Int?       @map("large_balance_window_days")
+  isHard                 Boolean    @map("is_hard")
+  defaultNextStep        String     @map("default_next_step")
+  irsLink                String?    @map("irs_link")
+
+  notices Notice[]
+
+  @@map("notice_rules")
 }

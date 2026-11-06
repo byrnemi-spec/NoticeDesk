@@ -23,14 +23,21 @@ and never miss a response window. See [PLAN.md](./PLAN.md) for the full build pl
    ```bash
    docker run --name noticedesk-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=noticedesk -p 5432:5432 -d postgres:16
    ```
-4. Apply database migrations (once models exist):
+4. Create the tables and load demo data (12 notice rules, a demo firm, a staff user, 5 fake clients):
    ```bash
    npm run db:migrate
+   ```
+   ```bash
+   npm run db:seed
    ```
 5. Start the dev server and open http://localhost:3000:
    ```bash
    npm run dev
    ```
+
+## Demo login
+- Email: `demo@noticedesk.test`
+- Password: `demo1234` (demo only; all client data is fake)
 
 ## Stack
 Next.js (App Router, TypeScript) · Tailwind CSS · PostgreSQL · Prisma · Auth.js · Claude API · Railway
