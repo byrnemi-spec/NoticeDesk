@@ -29,6 +29,8 @@ src/lib/session.ts      requireUser() → { id, firmId, role } or redirect to /l
 src/lib/db.ts           Shared Prisma client
 src/lib/                Server logic (extract.ts, deadline.ts, auth helpers — added later)
 DEPLOY.md               Railway deploy walkthrough
+Dockerfile              Production image Railway builds (node:22-bookworm, includes OpenSSL for Prisma)
+scripts/check-env.mjs   Startup check: fails with a plain-English message if env vars are missing
 .env.example            Template for env vars (copy to .env)
 uploads/                Local upload dir (gitignored)
 ```

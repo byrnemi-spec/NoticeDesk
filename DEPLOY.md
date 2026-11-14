@@ -5,8 +5,11 @@ button may be worded slightly differently — look for the closest match.
 
 ## How this app deploys (so the steps make sense)
 
-- Railway pulls the code from GitHub `main`, runs `npm install` and `npm run build`, then `npm start`.
-- `npm start` does three things in order, every time the app starts:
+- Railway pulls the code from GitHub `main` and, because the repo has a `Dockerfile`, builds the
+  app with it (Build Logs show Docker steps). It then runs `npm start`.
+- `npm start` does four things in order, every time the app starts:
+  0. Checks `DATABASE_URL` and `AUTH_SECRET` are set. If not, the Deploy Logs print
+     **"NoticeDesk cannot start: configuration problem"** with exactly what to fix.
   1. `prisma migrate deploy` — creates/updates the database tables
   2. `prisma db seed` — loads the 12 notice rules, demo firm, demo user, and 5 fake clients
      (safe to repeat: it never duplicates rows, and resets the demo password to `demo1234`)
@@ -75,6 +78,7 @@ Copy the output (about 44 characters, e.g. `q3W...=`). Don't paste it anywhere e
    - `Generated Prisma Client`
    - `✓ Compiled successfully`
 3. **Deploy Logs** — look for these lines, in this order:
+   - `Config check passed (DATABASE_URL and AUTH_SECRET are set).`
    - `All migrations have been successfully applied.` ← migration ran
    - `Seeded: 12 notice rules, firm "Demo Tax Resolution LLC", user demo@noticedesk.test, 5 clients.` ← seed ran
    - `✓ Ready in …` ← website is up. Note the port in `Local: http://localhost:XXXX` (usually 8080).
@@ -109,6 +113,7 @@ From now on, every push to `main` redeploys automatically.
 
 | What you see (Deploy Logs) | Cause | Fix |
 | --- | --- | --- |
+| `NoticeDesk cannot start: configuration problem` | A variable is missing or wrong | Do what the lines under it say, then click Deploy |
 | `Environment variable not found: DATABASE_URL` | Variable missing or misspelled | Step 5; value must be exactly `${{Postgres.DATABASE_URL}}` |
 | `Can't reach database server` / `P1001` | Reference points at the wrong service name | If your database box isn't named "Postgres", use its name: `${{YourName.DATABASE_URL}}` |
 | `MissingSecret` | `AUTH_SECRET` not set | Step 4–5 |
